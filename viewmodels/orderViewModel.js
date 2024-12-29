@@ -45,7 +45,7 @@ const useOrderViewModel = () => {
         return false;
       }
       const status = await getOrderStatus(oid, sid);
-      console.log(status);
+      console.log("(orderViewModel)", status);
       return status;
     } catch (error) {
       console.error('Error fetching order status:', error);

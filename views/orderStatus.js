@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Button, StyleSheet, Image } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import useOrderViewModel from '../viewmodels/orderViewModel';
@@ -7,6 +7,10 @@ const OrderStatus = () => {
   const { orderStatus, updateOrderStatus, location, getOrderStatusViewModel, sid, oid, getMenuDetailsViewModel } = useOrderViewModel();
   const [statusResult, setStatusResult] = useState(null);
   const [menuDetails, setMenuDetails] = useState(null); // Nuovo stato per i dettagli del menu e per la posizione di partenza
+
+  const mapRef = useRef(null); // Riferimento alla MapView
+  const [zoomLevel, setZoomLevel] = useState(0.01); // Stato per il livello di zoom
+
 
   // Nuovo useEffect basato su sid e oid
   useEffect(() => {
@@ -70,18 +74,74 @@ const OrderStatus = () => {
     );
   }
 
+  //pulsante che utilizza il metodo animateToRegion per centrare la mappa sulla posizione dell'utente
+  const centerOnUserLocation = () => {
+    if (location && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        latitudeDelta: zoomLevel,
+        longitudeDelta: zoomLevel,
+      }, 1000); // 1000 ms per l'animazione
+    }
+  };
+
+  //pulsante dello zoom, possiamo modificare lo stato zoomLevel e aggiornare la mappa di conseguenza.
+  const zoomIn = () => {
+    if (mapRef.current) {
+      setZoomLevel((prevZoom) => Math.max(prevZoom / 2, 0.002)); // Zoom in (riduce latitudeDelta e longitudeDelta)
+    }
+  };
+
+  const zoomOut = () => {
+    if (mapRef.current) {
+      setZoomLevel((prevZoom) => Math.min(prevZoom * 2, 1)); // Zoom out (aumenta latitudeDelta e longitudeDelta)
+    }
+  };
+
+  //pulsante che utilizza il metodo animateToRegion per centrare la mappa sulla posizione del drone
+  const centerOnDrone = () => {
+    if (statusResult?.currentPosition && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: statusResult.currentPosition.lat,
+        longitude: statusResult.currentPosition.lng,
+        latitudeDelta: zoomLevel,
+        longitudeDelta: zoomLevel,
+      }, 1000); // 1000 ms per l'animazione
+    }
+  };
+
+
+
+
   return (
     <View style={styles.container}>
-      <Text>Stato Ordine: {statusResult.status}</Text>
+      {/* Visualizza lo stato dell'ordine */}
+      <Text style={styles.textStatus}>Stato Ordine: {statusResult.status}</Text>
+      {/* Pulsante per aggiornare lo stato dell'ordine */}
       <Button title="Aggiorna Ordine" onPress={() => updateOrderStatus(statusResult.oid)} />
+
+      {/* Pulsanti per centrare la mappa, zoom e centrare il drone */}
+      <View style={styles.buttonContainer}>
+        <Button title="Centrami" onPress={centerOnUserLocation} />
+        <Button title="Zoom +" onPress={zoomIn} />
+        <Button title="Zoom -" onPress={zoomOut} />
+        <Button title="Centra Drone" onPress={centerOnDrone} />
+      </View>
+      
+      {/* Mappa che mostra la posizione dell'utente e del drone */}
       <MapView
+        ref={mapRef}  // Aggiunge il riferimento
         style={styles.map}
         region={{
           latitude: location.latitude,
           longitude: location.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
+          //latitudeDelta: 0.01,  ho modificato con l'uso di zoomLevel
+          //longitudeDelta: 0.01,
+          latitudeDelta: zoomLevel,
+          longitudeDelta: zoomLevel,
         }}>
+        {/* Marker per la posizione dell'utente */}
         <Marker
           coordinate={{
             latitude: location.latitude,
@@ -90,6 +150,7 @@ const OrderStatus = () => {
           title="La tua posizione"
           description="Posizione attuale"
         />
+        {/* Marker per la posizione dell'ordine */}
         <Marker
           coordinate={{
             latitude: statusResult.currentPosition.lat,
@@ -103,6 +164,7 @@ const OrderStatus = () => {
             style={{ width: 40, height: 40, borderRadius: 5 }}
           />
         </Marker>
+        {/* Linea che collega la posizione dell'utente e quella dell'ordine */}
         <Polyline
           coordinates={[
             { latitude: statusResult.currentPosition.lat, longitude: statusResult.currentPosition.lng },
@@ -112,13 +174,16 @@ const OrderStatus = () => {
           strokeWidth={3}
           lineDashPattern={[5, 5]}
         />
-        <Marker 
-          coordinate={{
-            latitude: menuDetails.location.lat,
-            longitude: menuDetails.location.lng,
-          }}
-          title='Partenza'
-        />
+        {/* Marker per la posizione di partenza del menu, se disponibile */}
+        {menuDetails && menuDetails.location && (
+          <Marker
+            coordinate={{
+              latitude: menuDetails.location.lat,
+              longitude: menuDetails.location.lng,
+            }}
+            title='Partenza'
+          />
+        )}
       </MapView>
     </View>
   );
@@ -130,18 +195,48 @@ const styles = StyleSheet.create({
     justifyContent: 'top',
     alignItems: 'center',
   },
+  textStatus: {
+    marginTop: 10,
+    fontSize: 20,
+    //fontWeight: 'bold',
+    marginBottom: 10,
+  },
+
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 10,
+    right: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 10,
+    borderRadius: 10,
+    zIndex: 10, // Assicurati che i pulsanti siano sopra la mappa
+
+  },
+  
+
+  /*
   map: {
     marginTop: 100,
     justifyContent: 'center',
     alignItems: 'center',
     width: 300,
     height: 300,
+  },*/
+
+  map: {
+    ...StyleSheet.absoluteFillObject,
+    marginTop: 100,
   },
+
   notfound: {
     color: 'red',
     flex: 1,
     justifyContent: 'center',
-    textAlignVertical: 'center',  
+    textAlignVertical: 'center',
     textAlignHorizontal: 'center',
     alignItems: 'center',
   },

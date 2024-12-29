@@ -6,83 +6,116 @@ import ModifyProfile from './modifyProfile'; // Importa la schermata per la modi
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+//import per mettere info ordine in profilo
+import useOrderViewModel from '../viewmodels/orderViewModel';
 
 
-  const Profile = ({ navigation }) => {  // Aggiungi il parametro navigation, 
-    //derivante dal fatto che la pagina "Profile" è registrata in App.js in uno stack navigator
-    const { userData, updateUserInfo } = useProfileViewModel();
 
-    /* // Gestore per il salvataggio dei dati modificati
-    const handleSubmit = () => {
-      // Qui puoi aggiungere la logica per aggiornare i dati
-      updateUserInfo({
-        nome: firstName,
-        cognome: lastName,
-        numero: cardNumber,
-        scadenza: `${expiryMonth}/${expiryYear}`,
-        cvv,
-      });
-    };
-   */
-    return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <Title style={styles.title}>Profilo</Title>
+const Profile = ({ navigation }) => {  // Aggiungi il parametro navigation, 
+  //derivante dal fatto che la pagina "Profile" è registrata in App.js in uno stack navigator
+  const { userData, updateUserInfo } = useProfileViewModel();
 
-          <Card style={styles.card}>
-            <Card.Content>
-              <Text style={styles.subtitle}>Dati Utente</Text>
-              <Card style={styles.subcard}>
-                <Card.Content>
-                  <Text style={styles.text}>Nome: {userData.nome}</Text>
-                </Card.Content>
-              </Card>
-              <Card style={styles.subcard}>
-                <Card.Content>
-                  <Text style={styles.text}>Cognome: {userData.cognome}</Text>
-                </Card.Content>
-              </Card>
-            </Card.Content>
-          </Card>
 
-          <Card style={styles.card}>
-            <Card.Content>
-              <Text style={styles.subtitle}>Carta di Credito</Text>
-              <Card style={styles.subcard}>
-                <Card.Content>
-                  <Text style={styles.text}>Intestatario: {userData.intestatario}</Text>
-                </Card.Content>
-              </Card>
-              <Card style={styles.subcard}>
-                <Card.Content>
-                  <Text style={styles.text}>Numero: {userData.numero}</Text>
-                </Card.Content>
-              </Card>
-              <Card style={styles.subcard}>
-                <Card.Content>
-                  <Text style={styles.text}>Scadenza: {userData.mese_scadenza}/{userData.anno_scadenza}</Text>
-                </Card.Content>
-              </Card>
-              <Card style={styles.subcard}>
-                <Card.Content>
-                  <Text style={styles.text}>CVV: {userData.cvv}</Text>
-                </Card.Content>
-              </Card>
-            </Card.Content>
-          </Card>
+  /*Funzioni per mettere info ordine in profilo */
+  const { orderStatus, updateOrderStatus, location, getOrderStatusViewModel, sid, oid, getMenuDetailsViewModel } = useOrderViewModel();
+  useEffect(() => {
+    const fetchStatus = async () => {
+      const result = await getOrderStatusViewModel();
+      console.log("(profile) result", result);
+    }
+  }, []); // Spiegazione: array di dipendenze vuoto, esegue solo al mount e al unmount
 
-          <Button
-            mode="contained"
-            onPress={() => navigation.navigate('ModifyProfile', {userData, updateUserInfo})} // Naviga alla schermata di modifica
-            style={styles.button}
-            labelStyle={styles.buttonLabel}
-          >
-            Modifica Profilo
-          </Button>
-        </ScrollView>
-      </SafeAreaView>
-    );
+
+
+  /* // Gestore per il salvataggio dei dati modificati
+  const handleSubmit = () => {
+    // Qui puoi aggiungere la logica per aggiornare i dati
+    updateUserInfo({
+      nome: firstName,
+      cognome: lastName,
+      numero: cardNumber,
+      scadenza: `${expiryMonth}/${expiryYear}`,
+      cvv,
+    });
   };
+ */
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Title style={styles.title}>Profilo</Title>
+
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text style={styles.subtitle}>Dati Utente</Text>
+            <Card style={styles.subcard}>
+              <Card.Content>
+                <Text style={styles.text}>Nome: {userData.nome}</Text>
+              </Card.Content>
+            </Card>
+            <Card style={styles.subcard}>
+              <Card.Content>
+                <Text style={styles.text}>Cognome: {userData.cognome}</Text>
+              </Card.Content>
+            </Card>
+          </Card.Content>
+        </Card>
+
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text style={styles.subtitle}>Carta di Credito</Text>
+            <Card style={styles.subcard}>
+              <Card.Content>
+                <Text style={styles.text}>Intestatario: {userData.intestatario}</Text>
+              </Card.Content>
+            </Card>
+            <Card style={styles.subcard}>
+              <Card.Content>
+                <Text style={styles.text}>Numero: {userData.numero}</Text>
+              </Card.Content>
+            </Card>
+            <Card style={styles.subcard}>
+              <Card.Content>
+                <Text style={styles.text}>Scadenza: {userData.mese_scadenza}/{userData.anno_scadenza}</Text>
+              </Card.Content>
+            </Card>
+            <Card style={styles.subcard}>
+              <Card.Content>
+                <Text style={styles.text}>CVV: {userData.cvv}</Text>
+              </Card.Content>
+            </Card>
+          </Card.Content>
+        </Card>
+
+{/* Card per visualizzare l'ultimo ordine effettuato
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text style={styles.subtitle}>Ultimo Ordine</Text>
+            <Card style={styles.subcard}>
+              <Card.Content>
+                <Text style={styles.text}>Nome Menu: {result.mid}</Text>
+              </Card.Content>
+            </Card>
+            <Card style={styles.subcard}>
+              <Card.Content>
+                <Text style={styles.text}>Stato Ordine: {result.status}</Text>
+              </Card.Content>
+            </Card>
+          </Card.Content>
+        </Card>
+*/}
+
+        <Button
+          mode="contained"
+          onPress={() => navigation.navigate('ModifyProfile', { userData, updateUserInfo })} // Naviga alla schermata di modifica
+          style={styles.button}
+          labelStyle={styles.buttonLabel}
+        >
+          Modifica Profilo
+        </Button>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
