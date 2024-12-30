@@ -4,8 +4,13 @@ import { saveProfile, getSid, getUserServer } from '../models/profileModel';
 import * as SQLite from 'expo-sqlite';
 import DBController from '../models/DBController';
 
+import useOrderViewModel from '../viewmodels/orderViewModel';
+
+
 
 const useProfileViewModel = () => {
+
+  const { orderStatus, updateOrderStatus, location, getOrderStatusViewModel, sid, oid, getMenuDetailsViewModel } = useOrderViewModel();
 
 
   // Effetto per aprire il database al montaggio del componente, apre il database "userDB" e recupera il primo utente
@@ -40,6 +45,35 @@ const useProfileViewModel = () => {
     lastOid: 0,
     orderStatus: '',
   });
+
+
+  // Stato per l'ultimo ordine effettuato
+  const [lastOrder, setLastOrder] = useState({
+    menuName: '',
+    status: '',
+  });
+
+
+  // Effetto per caricare i dati dell'ultimo ordine effettuato
+  useEffect(() => {
+    const fetchLastOrder = async () => {
+      try {
+        const orderStatus = await getOrderStatusViewModel();
+        if (orderStatus) {
+          const menuDetails = await getMenuDetailsViewModel();
+          console.log("(profileViewModel) orderStatus: ", orderStatus);
+          setLastOrder({
+            menuName: menuDetails?.name || 'Nome non disponibile',
+            status: orderStatus?.status || 'Stato non disponibile',
+          });
+        }
+      } catch (error) {
+        console.error('[useProfileViewModel] Errore durante il recupero dell\'ultimo ordine:', error);
+      }
+    };
+
+    fetchLastOrder();
+  }, []);
 
 
 // Funzione per caricare i dati dal database locale
@@ -133,6 +167,7 @@ const useProfileViewModel = () => {
 
   return {
     userData,
+    lastOrder,
     updateUserInfo,
   };
 

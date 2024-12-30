@@ -6,24 +6,15 @@ import ModifyProfile from './modifyProfile'; // Importa la schermata per la modi
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-//import per mettere info ordine in profilo
-import useOrderViewModel from '../viewmodels/orderViewModel';
+
 
 
 
 const Profile = ({ navigation }) => {  // Aggiungi il parametro navigation, 
   //derivante dal fatto che la pagina "Profile" è registrata in App.js in uno stack navigator
-  const { userData, updateUserInfo } = useProfileViewModel();
+  const { userData, lastOrder, updateUserInfo } = useProfileViewModel();
 
-
-  /*Funzioni per mettere info ordine in profilo */
-  const { orderStatus, updateOrderStatus, location, getOrderStatusViewModel, sid, oid, getMenuDetailsViewModel } = useOrderViewModel();
-  useEffect(() => {
-    const fetchStatus = async () => {
-      const result = await getOrderStatusViewModel();
-      console.log("(profile) result", result);
-    }
-  }, []); // Spiegazione: array di dipendenze vuoto, esegue solo al mount e al unmount
+  console.log("(profile.js) lastOrder: ", lastOrder);
 
 
 
@@ -85,24 +76,14 @@ const Profile = ({ navigation }) => {  // Aggiungi il parametro navigation,
             </Card>
           </Card.Content>
         </Card>
-
-{/* Card per visualizzare l'ultimo ordine effettuato
+        {/* Card per visualizzare i dettagli dell'ultimo ordine effettuato */}
         <Card style={styles.card}>
           <Card.Content>
             <Text style={styles.subtitle}>Ultimo Ordine</Text>
-            <Card style={styles.subcard}>
-              <Card.Content>
-                <Text style={styles.text}>Nome Menu: {result.mid}</Text>
-              </Card.Content>
-            </Card>
-            <Card style={styles.subcard}>
-              <Card.Content>
-                <Text style={styles.text}>Stato Ordine: {result.status}</Text>
-              </Card.Content>
-            </Card>
+            <Text style={styles.text}>Nome Menu: {lastOrder.menuName}</Text>
+            <Text style={styles.text}>Stato Ordine: {lastOrder.status}</Text>
           </Card.Content>
         </Card>
-*/}
 
         <Button
           mode="contained"
