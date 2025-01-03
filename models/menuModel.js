@@ -141,7 +141,7 @@ export const fetchMenuDetails = async (menuId) => {
     if (!sid) {
       throw new Error('SID non trovato');
     }
-
+  
     // Fetch the menu details
     const response = await fetch(`${BASE_URL}/menu/${menuId}?lat=${latitude}&lng=${longitude}&sid=${sid}`, {
       method: 'GET',

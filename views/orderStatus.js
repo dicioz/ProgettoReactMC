@@ -20,8 +20,12 @@ const OrderStatus = () => {
       try {
         const result = await getOrderStatusViewModel();
         let menuDetails = null;
-        if (result !== false) {
-          menuDetails = await getMenuDetailsViewModel();
+        console.log('result', result);
+        if (result != false) {
+          const lat = result.deliveryLocation.lat;
+          const lng = result.deliveryLocation.lng;
+          menuDetails = await getMenuDetailsViewModel(result.mid, lat, lng);
+          console.log('menuDetails2', menuDetails);
         }
         if (result === false) {
           // Spiegazione: se non ci sono ordini, settiamo false e saltiamo il polling
@@ -111,15 +115,27 @@ const OrderStatus = () => {
     }
   };
 
-
+    // Funzione per estrarre l'ora in formato leggibile
+    const formatTime = (dateString) => {
+      const date = new Date(dateString);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Formato HH:mm
+    };
+  
 
 
   return (
     <View style={styles.container}>
+      
+      <Text style={styles.textStatus}>Hai ordinato: {menuDetails.name}</Text>
       {/* Visualizza lo stato dell'ordine */}
       <Text style={styles.textStatus}>Stato Ordine: {statusResult.status}</Text>
       {/* Pulsante per aggiornare lo stato dell'ordine */}
-      <Button title="Aggiorna Ordine" onPress={() => updateOrderStatus(statusResult.oid)} />
+      <Button title="Aggiorna Ordine" onPress={() => updateOrderStatus(() => setStatusResult())} />
+      <Text style={styles.textStatus}>
+      {statusResult.deliveryTimestamp 
+        ? "Consegnato alle " + formatTime(statusResult.deliveryTimestamp) 
+        : "Orario di arrivo: " + formatTime(statusResult.expectedDeliveryTimestamp)}
+    </Text>
 
       {/* Pulsanti per centrare la mappa, zoom e centrare il drone */}
       <View style={styles.buttonContainer}>
@@ -229,7 +245,7 @@ const styles = StyleSheet.create({
 
   map: {
     ...StyleSheet.absoluteFillObject,
-    marginTop: 100,
+    marginTop: 200,
   },
 
   notfound: {
