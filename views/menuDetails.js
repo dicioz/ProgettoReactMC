@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 import { Button } from 'react-native-paper';
 import useMenuDetailsViewModel from '../viewmodels/menuDetailsViewModel';
 import useOrderViewModel from '../viewmodels/orderViewModel';
+import useProfileViewModel from '../viewmodels/profileViewModel';
 
 const MenuDetails = ({ route, navigation }) => {
   const { menuId } = route.params;
-  const { menuDetails, loading, error, order } = useMenuDetailsViewModel(menuId);
+  const { menuDetails, loading, error, order, checkStatusOrder } = useMenuDetailsViewModel(menuId);
   const { location } = useOrderViewModel();
+  const { refreshProfileData } = useProfileViewModel();
   if (loading) {
     return (
       <View style={styles.loading}>
@@ -49,10 +51,21 @@ const MenuDetails = ({ route, navigation }) => {
       <Text style={styles.price}>Prezzo: {menuDetails.price} €</Text>
       <Text style={styles.longDescription}>{menuDetails.longDescription}</Text>
       
+      {/* Button per ordinare, controlla se è gia presente un altro ordine, se si impedisce l'ordine */}
       <Button
         mode="contained"
         onPress={async () => {
-          const result = await order(menuId, location);
+          const check = await checkStatusOrder();
+          console.log('check:', check); 
+          // chiama refreshProfileData dopo un nuovo ordine per aggiornare la pagina profilo
+          if(check === "COMPLETED") {
+            const result = await order(menuId, location);
+            alert('Ordine effettuato correttamente!');
+            await refreshProfileData(); // ricarica i dati dal server e dal DB
+          } else {
+            alert('Hai già un ordine attivo!');
+          }
+          
         }}
         style={styles.button}
       >

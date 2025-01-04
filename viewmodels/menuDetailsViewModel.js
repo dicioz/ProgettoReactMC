@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { fetchMenuDetails } from '../models/menuModel';
-import { orderMenu } from '../models/menuDetailsModel';
+import { orderMenu, checkStatusOrderModel } from '../models/menuDetailsModel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const useMenuDetailsViewModel = (menuId) => {
@@ -47,8 +47,18 @@ const useMenuDetailsViewModel = (menuId) => {
     }
   };
 
+  // Funzione per controllare lo stato dell'ordine
+  const checkStatusOrder = async () => {
+    try {
+      const response = await checkStatusOrderModel();
+      return response.orderStatus;
+    } catch (error) {
+      throw new Error('Errore durante il controllo dello stato dell\'ordine');
+    }
+  };
 
-  return {order, menuDetails, loading, error, mid };
+
+  return {order, menuDetails, loading, error, mid, checkStatusOrder };
 };
 
 export default useMenuDetailsViewModel;

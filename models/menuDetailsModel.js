@@ -30,3 +30,17 @@ export const orderMenu = async (mid, location) => { // mid = menuID
     throw error;
   }
 };
+
+
+//ottiene i dettagli dell'utente per vedere lo stato di un ordine
+export const checkStatusOrderModel = async () => {
+  try {
+    const uid = await AsyncStorage.getItem('UID');
+    const sid = await AsyncStorage.getItem('SID');
+    const response = await CommunicationController.genericRequest(`/user/${uid}`, 'GET', { sid: sid }, {});
+    return response;
+  } catch (error) {
+    console.error('Error during menu request: ', error);
+    throw error;
+  }
+};

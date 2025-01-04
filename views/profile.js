@@ -5,62 +5,21 @@ import useProfileViewModel from '../viewmodels/profileViewModel';
 import ModifyProfile from './modifyProfile'; // Importa la schermata per la modifica
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-
-//import per mettere info ordine in profilo
-import useOrderViewModel from '../viewmodels/orderViewModel';
-
-
+import asyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 const Profile = ({ navigation }) => {  // Aggiungi il parametro navigation, 
   //derivante dal fatto che la pagina "Profile" è registrata in App.js in uno stack navigator
-  const { userData, updateUserInfo } = useProfileViewModel();
+  const { userData, updateUserInfo, refreshProfileData, menuDetails, resultDet } = useProfileViewModel();
 
-  const [menuDetails, setMenuDetails] = useState(null);
-  const [resultDet, setResultDet] = useState(null);
+  // useFocusEffect: quando la pagina torna visibile, richiama refreshProfileData per aggiornare i dati
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfileData(); // chiama la funzione del viewmodel per ricaricare i dati
+    }, [])
+  );
 
-
-  /*Funzioni per mettere info ordine in profilo */
-  const { orderStatus, updateOrderStatus, location, getOrderStatusViewModel, sid, oid, getMenuDetailsViewModel } = useOrderViewModel();
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const result = await getOrderStatusViewModel();
-        console.log('result', result);
-        if (result != false) {
-          const lat = result.deliveryLocation.lat;
-          const lng = result.deliveryLocation.lng;
-          const menuDetails = await getMenuDetailsViewModel(result.mid, lat, lng);
-          console.log('menuDetails2', menuDetails);
-          setMenuDetails(menuDetailsData); // Aggiorna lo stato
-          setResultDet(result); // Aggiorna lo stato
-        }
-      } catch (error) {
-        console.error('Error fetching order status:', error);
-      }
-
-
-
-
-    }
-
-    fetchStatus();
-  }, []); // Spiegazione: array di dipendenze vuoto, esegue solo al mount e al unmount
-
-
-
-  /* // Gestore per il salvataggio dei dati modificati
-  const handleSubmit = () => {
-    // Qui puoi aggiungere la logica per aggiornare i dati
-    updateUserInfo({
-      nome: firstName,
-      cognome: lastName,
-      numero: cardNumber,
-      scadenza: `${expiryMonth}/${expiryYear}`,
-      cvv,
-    });
-  };
- */
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -108,24 +67,23 @@ const Profile = ({ navigation }) => {  // Aggiungi il parametro navigation,
           </Card.Content>
         </Card>
 
-        {/* Card per visualizzare l'ultimo ordine effettuato*/}
+        {/* Card per visualizzare l'ultimo ordine effettuato */}
         <Card style={styles.card}>
           <Card.Content>
             <Text style={styles.subtitle}>Ultimo Ordine</Text>
             <Card style={styles.subcard}>
               <Card.Content>
-                <Text style={styles.text}>Nome Menu: {menuDetails.mid}</Text>
+                <Text style={styles.text}>Nome Menu: {menuDetails?.name || 'N/A'}</Text>
               </Card.Content>
             </Card>
             <Card style={styles.subcard}>
               <Card.Content>
-                <Text style={styles.text}>Stato Ordine: {resultDet.status}</Text>
+                <Text style={styles.text}>Stato Ordine: {resultDet?.status || 'N/A'}</Text>
               </Card.Content>
             </Card>
           </Card.Content>
         </Card>
-
-
+        
         <Button
           mode="contained"
           onPress={() => navigation.navigate('ModifyProfile', { userData, updateUserInfo })} // Naviga alla schermata di modifica
