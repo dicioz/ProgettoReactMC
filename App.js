@@ -11,9 +11,9 @@ import Profile from './views/profile';
 import modifyProfile from './views/modifyProfile';
 import EnableLocationScreen from './views/enableLocation';
 import { useEffect } from 'react';
-import { fetchData } from './viewmodels/AppViewModel';
-import DBController from './models/DBController';
-import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
+import { fetchData, saveLastPage, getLastPage } from './viewmodels/AppViewModel';
+
+
 import * as Location from 'expo-location';
 
 // Stack Navigator per il menù
@@ -43,8 +43,15 @@ const Tab = createBottomTabNavigator();
 const App = () => {
   const [locationPermission, setLocationPermission] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initialRoute, setInitialRoute] = useState('Menu');
 
   useEffect(() => {
+    // Funzione per recuperare l'ultima pagina visitata
+    const fetchLastPage = async () => {
+      const lastPage = await getLastPage();
+      setInitialRoute(lastPage || 'Menu'); // Imposta la pagina iniziale in base all'ultima pagina visitata, menu se non c'è nulla
+    }
+    // Funzione per controllare i permessi di localizzazione
     const checkPermissions = async () => {
       let { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -55,8 +62,10 @@ const App = () => {
       }
     };
 
+    fetchLastPage();
     checkPermissions();
 
+    // Esegui la funzione fetchData e imposta isInitialized a true quando è completata
     fetchData().then((textToShow) => {
       console.log(textToShow);
       setIsInitialized(true);
@@ -88,8 +97,15 @@ const App = () => {
   }
 
   return (
-    <NavigationContainer>
-      <Tab.Navigator
+    <NavigationContainer
+      onStateChange={async (state) => {
+        const currentRoute = state?.routes[state.index]?.name;
+        if(currentRoute) {
+          await saveLastPage(currentRoute);//Salva l'ultima pagina visitata
+        }
+      }}
+    >
+      <Tab.Navigator initialRouteName={ initialRoute } // Imposta la pagina iniziale in base all'ultima pagina visitata
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;

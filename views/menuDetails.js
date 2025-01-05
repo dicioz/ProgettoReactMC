@@ -7,7 +7,7 @@ import useProfileViewModel from '../viewmodels/profileViewModel';
 
 const MenuDetails = ({ route, navigation }) => {
   const { menuId } = route.params;
-  const { menuDetails, loading, error, order, checkStatusOrder } = useMenuDetailsViewModel(menuId);
+  const { menuDetails, loading, error, order, checkStatusOrder, checkUserViewModel } = useMenuDetailsViewModel(menuId);
   const { location } = useOrderViewModel();
   const { refreshProfileData } = useProfileViewModel();
   if (loading) {
@@ -55,17 +55,21 @@ const MenuDetails = ({ route, navigation }) => {
       <Button
         mode="contained"
         onPress={async () => {
-          const check = await checkStatusOrder();
-          console.log('check:', check); 
+          const checkOrder = await checkStatusOrder();
+          const checkUser = await checkUserViewModel();
+          console.log('check:', checkOrder);
+          console.log('checkUser:', checkUser); 
           // chiama refreshProfileData dopo un nuovo ordine per aggiornare la pagina profilo
-          if(check === "COMPLETED") {
-            const result = await order(menuId, location);
+          if(checkOrder === "COMPLETED" || checkOrder === null) {
+            await order(menuId, location);
             alert('Ordine effettuato correttamente!');
             await refreshProfileData(); // ricarica i dati dal server e dal DB
-          } else {
+          } else if ( checkUser === true && checkOrder === "ON_DELIVERY") {
             alert('Hai già un ordine attivo!');
+          } else if(checkUser === false) {
+            alert('Devi inserire i tuoi dati del profilo per poter ordinare!');
+            //navigation.navigate('Profile');
           }
-          
         }}
         style={styles.button}
       >

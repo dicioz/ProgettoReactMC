@@ -74,6 +74,7 @@ export default class DBController {
     async getAllUsers() {
         const query = "SELECT * FROM Users";
         const result = await this.db.getAllAsync(query);
+        console.log("getAllUsers: ", result);
         return result;
     }
 

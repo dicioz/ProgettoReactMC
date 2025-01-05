@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { fetchMenuDetails } from '../models/menuModel';
-import { orderMenu, checkStatusOrderModel } from '../models/menuDetailsModel';
+import { orderMenu, checkStatusOrderModel, checkUserModel } from '../models/menuDetailsModel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const useMenuDetailsViewModel = (menuId) => {
@@ -57,8 +57,25 @@ const useMenuDetailsViewModel = (menuId) => {
     }
   };
 
+  const checkUserViewModel = async() => {
+    try {
+      const response = await checkUserModel();
+      //console.log('response:', response);
+      if(response.length === 0) {
+        console.log('Utente non presente');
+        return false;
+      } else {
+        console.log('Utente presente');
+        return true;
+      }
+    } catch (error) {
+      throw new Error('Errore durante il controllo per la presenza dell\'utente');  
+    }
+   
+  }
 
-  return {order, menuDetails, loading, error, mid, checkStatusOrder };
+
+  return {order, menuDetails, loading, error, mid, checkStatusOrder, checkUserViewModel };
 };
 
 export default useMenuDetailsViewModel;

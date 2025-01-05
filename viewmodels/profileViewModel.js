@@ -109,7 +109,7 @@ const useProfileViewModel = () => {
       await saveProfile(datasToSave);
       const temp = await getUserServer(); // Recupera i dati aggiornati
       console.log('[ProfileViewModel] Dati utente aggiornati:', temp);
-      //console.log('Dati utente aggiornati di userData:', userData);
+      await refreshProfileData(); // ricarica i dati aggiornati dal DB e dal server
     } catch (error) {
       console.error('Errore durante il salvataggio:', error);
     }

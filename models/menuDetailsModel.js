@@ -44,3 +44,14 @@ export const checkStatusOrderModel = async () => {
     throw error;
   }
 };
+
+export const checkUserModel = async () => {
+  try {
+    const db = new DBController();
+    await db.openDB("userDB");
+    const user = await db.getAllUsers();
+    return user;
+  } catch (error) {
+    throw new Error('Errore durante il controllo per la presenza dell\'utente');
+  }
+}
