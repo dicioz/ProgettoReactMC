@@ -60,7 +60,7 @@ const MenuDetails = ({ route, navigation }) => {
           console.log('check:', checkOrder);
           console.log('checkUser:', checkUser); 
           // chiama refreshProfileData dopo un nuovo ordine per aggiornare la pagina profilo
-          if(checkOrder === "COMPLETED" || checkOrder === null) {
+          if((checkOrder === "COMPLETED" || checkOrder === null) && checkUser === true) {
             await order(menuId, location);
             alert('Ordine effettuato correttamente!');
             await refreshProfileData(); // ricarica i dati dal server e dal DB

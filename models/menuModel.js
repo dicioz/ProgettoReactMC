@@ -1,11 +1,15 @@
 import * as Location from 'expo-location';
-import {getCurrentLocation, locationModel} from '../models/locationModel';
-import {fetchLocation} from '../models/locationModel';
+import { getCurrentLocation, locationModel } from '../models/locationModel';
+import { fetchLocation } from '../models/locationModel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DBController from './DBController';
+import React, { useEffect } from 'react';
 
 const BASE_URL = 'https://develop.ewlab.di.unimi.it/mc/2425'; // Base URL for your API
 //const  = 'vC51NLdQlBnA4no63Ah4YGsiZn0w1MqXvqVRcyxx5lc2nQtYZSTnsVaq9d3EsklJ'; // Your session ID (replace with your own)
 let sid;
+const dbController = new DBController();
+dbController.openDB();
 
 // Funzione per ottenere la posizione corrente
 const getCurrentPosition = async () => {
@@ -32,29 +36,70 @@ const getCurrentPosition = async () => {
 }
 
 // Function to fetch the image of a specific menu by its ID
-const fetchMenuImage = async (menuId) => {
-  
+const fetchMenuImage = async (menuId, imageVersion) => {
+
   try {
     if (!menuId) {
       throw new Error('Invalid menu ID');
     }
 
-    const response = await fetch(`${BASE_URL}/menu/${menuId}/image?sid=${sid}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${sid}`,
-      },
-    });
+    // recupera l'immagine se già presente nel db
+    const check = await dbController.getImage(menuId);
+    //console.log("databse aperto? ", dbController); 
 
-    if (!response.ok) {
-      const data = await response.json();
-      console.error('[fetchMenuImage] Error fetching image:', data);
-      throw new Error(data.error || 'Error fetching image');
+    if (dbController && check !== null) {
+      // se l'immagine è presente nel db, controlla se le versioni sono diverse e in caso scarica la nuova immagine e la salva
+      //console.log("(menuModel)immagine trovata nel db");
+      if(check.versione !== imageVersion){
+        //console.log("vecchia versione: ", check.versione, " nuova versione: ", imageVersion);
+        //console.log("(MenuModel)versione immagine diversa da quella nel db");
+        const response = await fetch(`${BASE_URL}/menu/${menuId}/image?sid=${sid}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sid}`,
+          },
+        });
+        if (!response.ok) {
+          const data = await response.json();
+          console.error('[fetchMenuImage] Error fetching the new image:', data);
+          throw new Error(data.error || 'Error fetching the new image');
+        } else {
+          const data = await response.json();
+          console.log("(menuModel)salvo nuova immagine nel db");
+          await dbController.saveImage(menuId, data.base64, imageVersion);
+          return data.image;
+        }
+      }
+      //ritonra l'immagine se le versioni coincidono
+      return check.image;
+    } else  {
+      // se l'immagine non è presente nel db, la scarica e la salva
+      console.log("(menuModel)immagine non trovata nel db");
+      const response = await fetch(`${BASE_URL}/menu/${menuId}/image?sid=${sid}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sid}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.error('[fetchMenuImage] Error fetching image:', data);
+        throw new Error(data.error || 'Error fetching image');
+      } else {
+        const data = await response.json();
+        console.log("(menuModel)salvo immagine nel db");
+        await dbController.saveImage(menuId, data.base64, imageVersion);
+        //const image = await dbController.getImage(menuId);
+        return data.image;
+      }
+
+      /* const imageUrl = await response.json();
+      return imageUrl.base64; // Return the base64 image data */
     }
 
-    const imageUrl = await response.json();
-    return imageUrl.base64; // Return the base64 image data
 
   } catch (error) {
     console.error('[fetchMenuImage] Error during image fetch:', error);
@@ -99,10 +144,11 @@ export const fetchMenus = async () => {
     const updatedMenus = await Promise.all(menus.map(async (menu) => {
       const menuId = menu.mid;
       let menuImage = null;
+      const imageVersion = menu.imageVersion;
 
       if (menuId) {
         try {
-          menuImage = await fetchMenuImage(menuId); // Fetch image for the menu
+          menuImage = await fetchMenuImage(menuId, imageVersion); // Fetch image for the menu
         } catch (error) {
           console.error(`[fetchMenus] Failed to fetch image for menuId ${menuId}:`, error);
         }
@@ -141,7 +187,7 @@ export const fetchMenuDetails = async (menuId) => {
     if (!sid) {
       throw new Error('SID non trovato');
     }
-  
+
     // Fetch the menu details
     const response = await fetch(`${BASE_URL}/menu/${menuId}?lat=${latitude}&lng=${longitude}&sid=${sid}`, {
       method: 'GET',

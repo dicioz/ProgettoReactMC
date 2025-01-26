@@ -98,6 +98,7 @@ const App = () => {
 
   return (
     <NavigationContainer
+    // Aggiungi un listener per salvare l'ultima pagina visitata
       onStateChange={async (state) => {
         const currentRoute = state?.routes[state.index]?.name;
         if(currentRoute) {
