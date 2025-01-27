@@ -3,36 +3,11 @@ import { useState, useEffect } from 'react';
 import { saveProfile, getSid, getUserServer } from '../models/profileModel';
 import * as SQLite from 'expo-sqlite';
 import DBController from '../models/DBController';
-
 import useOrderViewModel from '../viewmodels/orderViewModel';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const useProfileViewModel = () => {
-
-  const { orderStatus, updateOrderStatus, location, getOrderStatusViewModel, sid, oid, getMenuDetailsViewModel } = useOrderViewModel();
-
-
-  // Effetto per aprire il database al montaggio del componente, apre il database "userDB" e recupera il primo utente
-/*   useEffect(() => {
-    const openDatabase = async () => {
-      try {
-        db = new DBController();
-        db.openDB("usersDB");
-        console.log('Database aperto:', db);
-        const temp = await db.getFirstUser();
-        setUserData((prevData) => ({ // Aggiorna i dati utente con i dati recuperati
-          ...prevData,
-          ...temp,
-        }));
-      }
-      catch (error) {
-        throw error;
-      }
-    };
-    openDatabase();
-  }, []); */
-
   const [userData, setUserData] = useState({
     nome: '',
     cognome: '',
@@ -45,36 +20,9 @@ const useProfileViewModel = () => {
     lastOid: 0,
     orderStatus: '',
   });
-
-
-  // Stato per l'ultimo ordine effettuato
-  const [lastOrder, setLastOrder] = useState({
-    menuName: '',
-    status: '',
-  });
-
-
-  // Effetto per caricare i dati dell'ultimo ordine effettuato
-  useEffect(() => {
-    const fetchLastOrder = async () => {
-      try {
-        const orderStatus = await getOrderStatusViewModel();
-        if (orderStatus) {
-          const menuDetails = await getMenuDetailsViewModel();
-          console.log("(profileViewModel) orderStatus: ", orderStatus);
-          setLastOrder({
-            menuName: menuDetails?.name || 'Nome non disponibile',
-            status: orderStatus?.status || 'Stato non disponibile',
-          });
-        }
-      } catch (error) {
-        console.error('[useProfileViewModel] Errore durante il recupero dell\'ultimo ordine:', error);
-      }
-    };
-
-    fetchLastOrder();
-  }, []);
-
+  const { getOrderStatusViewModel, getMenuDetailsViewModel } = useOrderViewModel();
+  const [menuDetails, setMenuDetails] = useState(null);
+  const [resultDet, setResultDet] = useState(null);
 
 // Funzione per caricare i dati dal database locale
   const loadUserData = async () => {
@@ -105,11 +53,32 @@ const useProfileViewModel = () => {
     }
   };
 
+  const fetchStatus = async () => {
+    // funzione per recuperare status e menu dal server
+    try {
+      const result = await getOrderStatusViewModel();
+      if (result !== false) {
+        const lat = result.deliveryLocation.lat;
+        const lng = result.deliveryLocation.lng;
+        const menu = await getMenuDetailsViewModel(result.mid, lat, lng);
+        setMenuDetails(menu);
+        setResultDet(result);
+      }
+    } catch (error) {
+      console.error('Error fetching order status:', error);
+    }
+  };
+
   // Effetto per caricare i dati al montaggio del componente
   useEffect(() => {
     loadUserData();
+    fetchStatus();
   }, []);
 
+  const refreshProfileData = async () => {
+    await loadUserData();  // ricarica i dati dal DB locale
+    await fetchStatus();   // ricarica lo stato ordine e i dettagli menu
+  };
 
   const updateUserInfo = async (newData) => {
     // Aggiorna i dati utente con i nuovi dati
@@ -133,24 +102,6 @@ const useProfileViewModel = () => {
       cardCVV: newData.cvv,
       sid: await getSid()
     }
-
-
-
-    /*
-    const datasToSave = {
-      firstName: "Marco",
-      lastName: "Rossi",
-      cardFullName: "Mario Rossi",
-      cardNumber: "1234567812345678",
-      cardExpireMonth: 12,
-      cardExpireYear: 0,
-      cardCVV: "123",
-      uid: 36984,
-      lastOid: 0,
-      orderStatus: "ON_DELIVERY",
-      sid: "FbZSkBgmJx8WVJaNZEQNgdaDeNTQ6GlSeuJaT9XyMDZwjdLU3Qz5kkla424b8m9u"
-    }*/
-
     console.log('Dati da salvare:', datasToSave);
 
     // Salva i dati sul server
@@ -158,7 +109,7 @@ const useProfileViewModel = () => {
       await saveProfile(datasToSave);
       const temp = await getUserServer(); // Recupera i dati aggiornati
       console.log('[ProfileViewModel] Dati utente aggiornati:', temp);
-      //console.log('Dati utente aggiornati di userData:', userData);
+      await refreshProfileData(); // ricarica i dati aggiornati dal DB e dal server
     } catch (error) {
       console.error('Errore durante il salvataggio:', error);
     }
@@ -169,7 +120,11 @@ const useProfileViewModel = () => {
     userData,
     lastOrder,
     updateUserInfo,
+    menuDetails,
+    resultDet,
+    refreshProfileData,
   };
+
 
 
 };

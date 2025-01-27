@@ -5,31 +5,21 @@ import useProfileViewModel from '../viewmodels/profileViewModel';
 import ModifyProfile from './modifyProfile'; // Importa la schermata per la modifica
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-
-
-
+import asyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 const Profile = ({ navigation }) => {  // Aggiungi il parametro navigation, 
   //derivante dal fatto che la pagina "Profile" è registrata in App.js in uno stack navigator
-  const { userData, lastOrder, updateUserInfo } = useProfileViewModel();
+  const { userData, updateUserInfo, refreshProfileData, menuDetails, resultDet } = useProfileViewModel();
 
-  console.log("(profile.js) lastOrder: ", lastOrder);
+  // useFocusEffect: quando la pagina torna visibile, richiama refreshProfileData per aggiornare i dati
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfileData(); // chiama la funzione del viewmodel per ricaricare i dati
+    }, [])
+  );
 
-
-
-  /* // Gestore per il salvataggio dei dati modificati
-  const handleSubmit = () => {
-    // Qui puoi aggiungere la logica per aggiornare i dati
-    updateUserInfo({
-      nome: firstName,
-      cognome: lastName,
-      numero: cardNumber,
-      scadenza: `${expiryMonth}/${expiryYear}`,
-      cvv,
-    });
-  };
- */
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -76,15 +66,24 @@ const Profile = ({ navigation }) => {  // Aggiungi il parametro navigation,
             </Card>
           </Card.Content>
         </Card>
-        {/* Card per visualizzare i dettagli dell'ultimo ordine effettuato */}
+
+        {/* Card per visualizzare l'ultimo ordine effettuato */}
         <Card style={styles.card}>
           <Card.Content>
             <Text style={styles.subtitle}>Ultimo Ordine</Text>
-            <Text style={styles.text}>Nome Menu: {lastOrder.menuName}</Text>
-            <Text style={styles.text}>Stato Ordine: {lastOrder.status}</Text>
+            <Card style={styles.subcard}>
+              <Card.Content>
+                <Text style={styles.text}>Nome Menu: {menuDetails?.name || 'N/A'}</Text>
+              </Card.Content>
+            </Card>
+            <Card style={styles.subcard}>
+              <Card.Content>
+                <Text style={styles.text}>Stato Ordine: {resultDet?.status || 'N/A'}</Text>
+              </Card.Content>
+            </Card>
           </Card.Content>
         </Card>
-
+        
         <Button
           mode="contained"
           onPress={() => navigation.navigate('ModifyProfile', { userData, updateUserInfo })} // Naviga alla schermata di modifica

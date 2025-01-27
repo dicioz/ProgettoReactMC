@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 import { Button } from 'react-native-paper';
 import useMenuDetailsViewModel from '../viewmodels/menuDetailsViewModel';
 import useOrderViewModel from '../viewmodels/orderViewModel';
+import useProfileViewModel from '../viewmodels/profileViewModel';
 
 const MenuDetails = ({ route, navigation }) => {
   const { menuId } = route.params;
-  const { menuDetails, loading, error, order } = useMenuDetailsViewModel(menuId);
+  const { menuDetails, loading, error, order, checkStatusOrder, checkUserViewModel } = useMenuDetailsViewModel(menuId);
   const { location } = useOrderViewModel();
+  const { refreshProfileData } = useProfileViewModel();
   if (loading) {
     return (
       <View style={styles.loading}>
@@ -49,10 +51,25 @@ const MenuDetails = ({ route, navigation }) => {
       <Text style={styles.price}>Prezzo: {menuDetails.price} €</Text>
       <Text style={styles.longDescription}>{menuDetails.longDescription}</Text>
       
+      {/* Button per ordinare, controlla se è gia presente un altro ordine, se si impedisce l'ordine */}
       <Button
         mode="contained"
         onPress={async () => {
-          const result = await order(menuId, location);
+          const checkOrder = await checkStatusOrder();
+          const checkUser = await checkUserViewModel();
+          console.log('check:', checkOrder);
+          console.log('checkUser:', checkUser); 
+          // chiama refreshProfileData dopo un nuovo ordine per aggiornare la pagina profilo
+          if((checkOrder === "COMPLETED" || checkOrder === null) && checkUser === true) {
+            await order(menuId, location);
+            alert('Ordine effettuato correttamente!');
+            await refreshProfileData(); // ricarica i dati dal server e dal DB
+          } else if ( checkUser === true && checkOrder === "ON_DELIVERY") {
+            alert('Hai già un ordine attivo!');
+          } else if(checkUser === false) {
+            alert('Devi inserire i tuoi dati del profilo per poter ordinare!');
+            //navigation.navigate('Profile');
+          }
         }}
         style={styles.button}
       >

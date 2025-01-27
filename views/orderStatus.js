@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Button, StyleSheet, Image } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import useOrderViewModel from '../viewmodels/orderViewModel';
+import { useIsFocused } from '@react-navigation/native';
 
 const OrderStatus = () => {
   const { orderStatus, updateOrderStatus, location, getOrderStatusViewModel, sid, oid, getMenuDetailsViewModel } = useOrderViewModel();
@@ -10,45 +11,51 @@ const OrderStatus = () => {
 
   const mapRef = useRef(null); // Riferimento alla MapView
   const [zoomLevel, setZoomLevel] = useState(0.01); // Stato per il livello di zoom
-
+  const isFocused = useIsFocused();
 
   // Nuovo useEffect basato su sid e oid
   useEffect(() => {
-    let interval = null; // serve a fare polling ogni 5 secondi
-    // Spiegazione: funzione che recupera lo stato ordine e gestisce la logica di 'false' e 'COMPLETED'
-    const fetchStatus = async () => {
-      try {
-        const result = await getOrderStatusViewModel();
-        let menuDetails = null;
-        if (result !== false) {
-          menuDetails = await getMenuDetailsViewModel();
-        }
-        if (result === false) {
-          // Spiegazione: se non ci sono ordini, settiamo false e saltiamo il polling
-          setStatusResult(false);
-          console.log("Non hai effettuato alcun ordine");
-        } else {
-          console.log(result.oid);
-          setStatusResult(result);
-          setMenuDetails(menuDetails);
-          // Spiegazione: se ordine completato, interrompe il polling
-          if (result.status === 'COMPLETED' && interval) {
-            clearInterval(interval);
+    if (isFocused) {
+      let interval = null; // serve a fare polling ogni 5 secondi
+      // Spiegazione: funzione che recupera lo stato ordine e gestisce la logica di 'false' e 'COMPLETED'
+      const fetchStatus = async () => {
+        try {
+          const result = await getOrderStatusViewModel();
+          let menuDetails = null;
+          console.log('result', result);
+          if (result != false) {
+            const lat = result.deliveryLocation.lat;
+            const lng = result.deliveryLocation.lng;
+            menuDetails = await getMenuDetailsViewModel(result.mid, lat, lng);
+            console.log('menuDetails2', menuDetails);
           }
+          if (result === false) {
+            // Spiegazione: se non ci sono ordini, settiamo false e saltiamo il polling
+            setStatusResult(false);
+            console.log("Non hai effettuato alcun ordine");
+          } else {
+            console.log(result.oid);
+            setStatusResult(result);
+            setMenuDetails(menuDetails);
+            // Spiegazione: se ordine completato, interrompe il polling
+            if (result.status === 'COMPLETED' && interval) {
+              clearInterval(interval);
+            }
+          }
+          return result;
+        } catch (error) {
+          console.error('Error fetching order status:', error);
         }
-        return result;
-      } catch (error) {
-        console.error('Error fetching order status:', error);
-      }
-    };
+      };
 
-    fetchStatus();      // Esegui subito
-    interval = setInterval(fetchStatus, 5000); // Polling
+      fetchStatus();      // Esegui subito
+      interval = setInterval(fetchStatus, 5000); // Polling
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [oid]); // Spiegazione: array di dipendenze vuoto, esegue solo al mount e al unmount
+      return () => {
+        if (interval) clearInterval(interval);
+      };
+    }
+  }, [oid, isFocused]); // Spiegazione: array di dipendenze vuoto, esegue solo al mount e al unmount
 
   if (statusResult === false) {
     return (
@@ -111,15 +118,34 @@ const OrderStatus = () => {
     }
   };
 
+    // Funzione per estrarre l'ora in formato leggibile
+    const formatTime = (dateString) => {
+      const date = new Date(dateString);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Formato HH:mm
+    };
 
+    const checkStatus = () => {
+      if(statusResult.status !== 'COMPLETED'){
+        setStatusResult();
+        
+      }
+    }
+  
 
 
   return (
     <View style={styles.container}>
+      
+      <Text style={styles.textStatus}>Hai ordinato: {menuDetails.name}</Text>
       {/* Visualizza lo stato dell'ordine */}
       <Text style={styles.textStatus}>Stato Ordine: {statusResult.status}</Text>
       {/* Pulsante per aggiornare lo stato dell'ordine */}
-      <Button title="Aggiorna Ordine" onPress={() => updateOrderStatus(statusResult.oid)} />
+      <Button title="Aggiorna Ordine" onPress={() => updateOrderStatus(() => checkStatus())} />
+      <Text style={styles.textStatus}>
+      {statusResult.deliveryTimestamp 
+        ? "Consegnato alle " + formatTime(statusResult.deliveryTimestamp) 
+        : "Orario di arrivo: " + formatTime(statusResult.expectedDeliveryTimestamp)}
+    </Text>
 
       {/* Pulsanti per centrare la mappa, zoom e centrare il drone */}
       <View style={styles.buttonContainer}>
@@ -181,7 +207,9 @@ const OrderStatus = () => {
               latitude: menuDetails.location.lat,
               longitude: menuDetails.location.lng,
             }}
-            title='Partenza'
+            pinColor="green"
+            title="Partenza Drone"
+            description="Punto di partenza del drone"
           />
         )}
       </MapView>
@@ -229,7 +257,7 @@ const styles = StyleSheet.create({
 
   map: {
     ...StyleSheet.absoluteFillObject,
-    marginTop: 100,
+    marginTop: 200,
   },
 
   notfound: {

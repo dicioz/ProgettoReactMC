@@ -12,9 +12,11 @@ export default class DBController {
     async openDB() {
         this.db = await SQLite.openDatabaseAsync('usersDB');
         const query = "CREATE TABLE IF NOT EXISTS Users (nome char(20) NOT NULL, cognome char(20) NOT NULL, numeroCarta char(16) NOT NULL, meseScadenza INTEGER NOT NULL, annoScadenza INTEGER NOT NULL, lastOid INTEGER, orderStatus char(20), cvv char(3) NOT NULL, uid INTEGER NOT NULL, PRIMARY KEY(uid));";
+        const query2 = "CREATE TABLE IF NOT EXISTS Image (mid INTEGER PRIMARY KEY, image TEXT NOT NULL, versione INTEGER DEFAULT 0);";
         //const query = "CREATE TABLE IF NOT EXISTS Users (ID INTEGER PRIMARY KEY AUTOINCREMENT, nome char(20) NOT NULL, cognome char(20) NOT NULL, );";
 
         await this.db.execAsync(query);
+        await this.db.execAsync(query2);
     }
 
     async saveUserInDatabase(user) {
@@ -74,6 +76,7 @@ export default class DBController {
     async getAllUsers() {
         const query = "SELECT * FROM Users";
         const result = await this.db.getAllAsync(query);
+        console.log("getAllUsers: ", result);
         return result;
     }
 
@@ -89,5 +92,29 @@ export default class DBController {
             console.error("[saveUserInDatabase] Errore durante il salvataggio dell'utente:", error);
             throw error;
         }
+    }
+
+    async saveImage(mid, base64, versione){
+        try{
+            const query = "INSERT OR REPLACE INTO Image(mid, image, versione) VALUES (?, ?, ?);";
+            await this.db.runAsync(query, [mid, base64, versione]);
+            //console.log("Immagine salvata con successo");
+        } catch(error){
+            console.error("[saveImage] Errore durante il salvataggio dell'immagine:", error);
+        }
+        
+    }
+
+    async getImage(mid){
+        try {
+            //console.log("recupero immagine");
+            const query = "SELECT image, versione FROM Image WHERE mid = ?";
+            const result = await this.db.getFirstAsync(query, [mid]); 
+            //console.log("Immagine recuperata con successo");
+            return result;
+        } catch (error) {
+            console.error("[getImage] Errore durante il recupero dell'immagine:", error);
+            throw error;
+        }   
     }
 }

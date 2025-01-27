@@ -53,17 +53,17 @@ const useOrderViewModel = () => {
     }
   };
 
-  const getMenuDetailsViewModel = async () => {
+  const getMenuDetailsViewModel = async (mid, lat, lng) => {
     try {
       const sid = await AsyncStorage.getItem("SID");
       // Se mid è assente o la location non è pronta, evitiamo l'errore
-      if (!mid || !location) {
+      console.log('(orderViewModel) mid: ', mid, 'location: ', lat, lng);
+      if (!mid || !lat || !lng) {
         return null;
       }
-      const lat = location.latitude;
-      const lng = location.longitude;
       console.log('(orderViewModel)lat: ', lat, 'lng: ', lng, 'mid: ', mid, 'sid: ', sid);  
       const response = await getMenuDetails(mid, lat, lng, sid);
+      console.log('(orderViewModel) getMenuDetails response: ', response);
       return response;
     } catch (error) {
       throw new Error('(OrderViewModel) Error fetching menu details:', error);
