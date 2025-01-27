@@ -50,8 +50,9 @@ const fetchMenuImage = async (menuId, imageVersion) => {
     if (dbController && check !== null) {
       // se l'immagine è presente nel db, controlla se le versioni sono diverse e in caso scarica la nuova immagine e la salva
       //console.log("(menuModel)immagine trovata nel db");
-      if(check.versione !== imageVersion){
-        //console.log("vecchia versione: ", check.versione, " nuova versione: ", imageVersion);
+      
+      if(check && check.versione && check.versione !== imageVersion){
+        console.log("vecchia versione: ", check.versione, " nuova versione: ", imageVersion);
         //console.log("(MenuModel)versione immagine diversa da quella nel db");
         const response = await fetch(`${BASE_URL}/menu/${menuId}/image?sid=${sid}`, {
           method: 'GET',
@@ -66,7 +67,7 @@ const fetchMenuImage = async (menuId, imageVersion) => {
           throw new Error(data.error || 'Error fetching the new image');
         } else {
           const data = await response.json();
-          console.log("(menuModel)salvo nuova immagine nel db");
+          console.log("(menuModel)salvo nuova versione immagine nel db");
           await dbController.saveImage(menuId, data.base64, imageVersion);
           return data.image;
         }
@@ -83,7 +84,6 @@ const fetchMenuImage = async (menuId, imageVersion) => {
           'Authorization': `Bearer ${sid}`,
         },
       });
-
       if (!response.ok) {
         const data = await response.json();
         console.error('[fetchMenuImage] Error fetching image:', data);
@@ -93,7 +93,7 @@ const fetchMenuImage = async (menuId, imageVersion) => {
         console.log("(menuModel)salvo immagine nel db");
         await dbController.saveImage(menuId, data.base64, imageVersion);
         //const image = await dbController.getImage(menuId);
-        return data.image;
+        return data.base64;
       }
 
       /* const imageUrl = await response.json();
@@ -183,7 +183,7 @@ export const fetchMenuDetails = async (menuId) => {
 
     // Ottiene la posizione corrente
     const { latitude, longitude } = await getCurrentPosition();
-    console.log('sid: ', sid);
+    console.log('(MenuModel)sid: ', sid);
     if (!sid) {
       throw new Error('SID non trovato');
     }
@@ -210,11 +210,12 @@ export const fetchMenuDetails = async (menuId) => {
     // Fetch the menu image
     let menuImage = null;
     try {
+      console.log("(MenuModel)fetchMenuImage");
       menuImage = await fetchMenuImage(menuId); // Fetch image for the menu
+      console.log("(MenuModel)fetchMenuImage completato");
     } catch (error) {
       console.error(`[fetchMenuDetails] Failed to fetch image for menuId ${menuId}:`, error);
     }
-
     // Add the image to the menu details
     const updatedMenuDetails = {
       ...menuDetails,

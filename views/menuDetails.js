@@ -35,8 +35,8 @@ const MenuDetails = ({ route, navigation }) => {
   }
 
   console.log('menuDetails: ', menuId);
-  console.log('Location:', location);
-
+  //console.log('Location:', location);
+  //console.log('menuDetails:', menuDetails);
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {menuDetails.image ? (
